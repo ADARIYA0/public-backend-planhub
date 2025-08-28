@@ -13,7 +13,7 @@ const AppDataSource = new DataSource({
   synchronize: true, // jangan aktifkan di production (hanya untuk dev)
   logging: false,
   entities: [
-    // masukkan entitas di sini, contoh: require('../entities/User')
+    require('../entities/User')
   ]
 });
 
