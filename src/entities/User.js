@@ -1,3 +1,4 @@
+// src/entities/User.js
 const { EntitySchema } = require('typeorm');
 
 module.exports = new EntitySchema({
@@ -36,6 +37,10 @@ module.exports = new EntitySchema({
         },
         otp: {
             type: 'varchar',
+            nullable: true
+        },
+        otp_expiry: {
+            type: 'datetime',
             nullable: true
         }
     }

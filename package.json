@@ -1,5 +1,5 @@
 {
-  "name": "server-event-ujikom",
+  "name": "server-planhub-event-ujikom",
   "version": "1.0.0",
   "description": "",
   "homepage": "https://github.com/ADARIYA0/server-event-ujikom#readme",
@@ -28,6 +28,7 @@
     "mariadb": "^3.4.5",
     "morgan": "^1.10.1",
     "mysql2": "^3.14.3",
+    "nodemailer": "^7.0.5",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.26",
     "winston": "^3.17.0"
