@@ -1,12 +1,11 @@
-// src/services/emailService.js
 const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // alamat gmail (contoh: your@gmail.com)
-    pass: process.env.EMAIL_PASS  // app password Gmail (lihat instruksi di bawah)
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -24,15 +23,37 @@ async function sendOtpEmail(to, otp, expiresMinutes = 15) {
     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to,
     subject: 'Kode Verifikasi (OTP) - Aplikasi',
-    text:
-`Halo,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 10px; padding: 20px; background-color: #fafafa;">
+        <h2 style="text-align: center; color: #333;">🔒 Verifikasi Akun Anda</h2>
+        <p style="font-size: 16px; color: #555;">
+          Halo,<br><br>
+          Terima kasih telah mendaftar di aplikasi kami. 
+          Gunakan kode OTP berikut untuk menyelesaikan proses verifikasi akun Anda:
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <span style="font-size: 32px; font-weight: bold; color: #2e86de; letter-spacing: 5px;">
+            ${otp}
+          </span>
+        </div>
+        
+        <p style="font-size: 16px; color: #555;">
+          Kode ini berlaku selama <b>${expiresMinutes} menit</b>. 
+          Jangan bagikan kode ini kepada siapapun demi keamanan akun Anda.
+        </p>
 
-Kode verifikasi (OTP) Anda adalah: ${otp}
+        <p style="font-size: 14px; color: #888; margin-top: 30px;">
+          Jika Anda tidak melakukan permintaan ini, abaikan email ini.
+        </p>
 
-Kode ini berlaku selama ${expiresMinutes} menit.
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;" />
 
-Jika Anda tidak meminta kode ini, abaikan email ini.
-`
+        <p style="font-size: 12px; color: #aaa; text-align: center;">
+          &copy; ${new Date().getFullYear()} Aplikasi Kita. Semua Hak Dilindungi.
+        </p>
+      </div>
+    `
   };
 
   try {

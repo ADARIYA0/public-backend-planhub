@@ -22,12 +22,6 @@ exports.register = async (req, res) => {
 
         logger.info(`User registration attempt: email=${email}`);
 
-        // hanya terima email @gmail.com
-        if (!email || !email.toLowerCase().endsWith('@gmail.com')) {
-            logger.warn(`Registration rejected: non-gmail email (email=${email})`);
-            return res.status(400).json({ message: 'Email harus berakhiran @gmail.com' });
-        }
-
         const existingUser = await userRepository.findOne({ where: { email } });
         if (existingUser) {
             logger.warn(`Registration failed: email already exists (email=${email})`);
@@ -68,7 +62,7 @@ exports.register = async (req, res) => {
     }
 };
 
-// LOGIN (tetap sama, tapi hanya boleh login jika status_akun = 'aktif')
+// LOGIN    
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -81,7 +75,6 @@ exports.login = async (req, res) => {
             return res.status(404).json({ message: 'User tidak ditemukan' });
         }
 
-        // cek apakah sudah verifikasi email
         if (user.status_akun !== 'aktif') {
             logger.warn(`Login failed: account not verified (email=${email})`);
             return res.status(403).json({ message: 'Akun belum terverifikasi. Silakan verifikasi lewat OTP.' });

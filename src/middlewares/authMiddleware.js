@@ -10,7 +10,7 @@ const verifyToken = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-        req.user = decoded; // simpan data user di request
+        req.user = decoded;
         next();
     } catch (error) {
         return res.status(403).json({ message: 'Token tidak valid atau sudah expired' });

@@ -1,7 +1,7 @@
-require('dotenv').config();
-require('reflect-metadata');
 const { DataSource } = require('typeorm');
 const logger = require('../utils/logger');
+require('dotenv').config();
+require('reflect-metadata');
 
 const AppDataSource = new DataSource({
   type: 'mariadb',
@@ -10,9 +10,12 @@ const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  synchronize: true, // jangan aktifkan di production (hanya untuk dev)
+  synchronize: true, // jangan aktifkan di production (hanya untuk development)
   logging: false,
   entities: [
+    require('../entities/Events/Event'),
+    require('../entities/Events/EventAttendance'),
+    require('../entities/Events/EventCategory'),
     require('../entities/User')
   ]
 });

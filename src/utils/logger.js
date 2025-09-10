@@ -10,8 +10,8 @@ const logger = createLogger({
     })
   ),
   transports: [
-    new transports.Console(), // Tampilkan di console
-    new transports.File({ filename: 'logs/app.log' }) // Simpan di file logs/app.log
+    new transports.Console(),
+    new transports.File({ filename: 'logs/app.log' })
   ]
 });
 

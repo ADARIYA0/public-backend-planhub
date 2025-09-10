@@ -1,4 +1,3 @@
-// src/entities/User.js
 const { EntitySchema } = require('typeorm');
 
 module.exports = new EntitySchema({
@@ -12,14 +11,20 @@ module.exports = new EntitySchema({
         },
         email: {
             type: 'varchar',
-            unique: true
+            length: 255,
+            unique: true,
+            nullable: false
         },
         no_handphone: {
             type: 'varchar',
-            unique: true
+            length: 20,
+            unique: true,
+            nullable: false
         },
         password: {
-            type: 'varchar'
+            type: 'varchar',
+            length: 255,
+            nullable: false
         },
         alamat: {
             type: 'text',
@@ -28,20 +33,30 @@ module.exports = new EntitySchema({
         pendidikan_terakhir: {
             type: 'enum',
             enum: ['SD/MI', 'SMP/MTS', 'SMA/SMK', 'Diploma', 'Sarjana', 'Lainnya'],
-            default: 'Lainnya'
+            default: 'Lainnya',
+            nullable: false
         },
         status_akun: {
             type: 'enum',
             enum: ['aktif', 'belum-aktif'],
-            default: 'belum-aktif'
+            default: 'belum-aktif',
+            nullable: false
         },
         otp: {
             type: 'varchar',
+            length: 10,
             nullable: true
         },
         otp_expiry: {
             type: 'datetime',
             nullable: true
+        }
+    },
+    relations: {
+        attendances: {
+            target: 'EventAttendance',
+            type: 'one-to-many',
+            inverseSide: 'user'
         }
     }
 });
