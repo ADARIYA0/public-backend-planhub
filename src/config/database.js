@@ -4,7 +4,7 @@ require('dotenv').config();
 require('reflect-metadata');
 
 const AppDataSource = new DataSource({
-  type: 'mariadb',
+  type: 'mysql',
   host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT, 10),
   username: process.env.DB_USERNAME,

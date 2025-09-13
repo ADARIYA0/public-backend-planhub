@@ -13,14 +13,6 @@ exports.registerValidator = [
         .matches(/[A-Z]/).withMessage('Password harus mengandung huruf besar')
         .matches(/[a-z]/).withMessage('Password harus mengandung huruf kecil')
         .matches(/[\W_]/).withMessage('Password harus mengandung karakter spesial'),
-    body('confirmPassword')
-        .notEmpty().withMessage('Konfirmasi password wajib diisi')
-        .custom((value, { req }) => {
-            if (value !== req.body.password) {
-                throw new Error('Password dan konfirmasi password tidak cocok');
-            }
-            return true;
-        }),
     body('alamat')
         .notEmpty().withMessage('Alamat wajib diisi'),
     body('pendidikan_terakhir')

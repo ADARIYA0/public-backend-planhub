@@ -22,7 +22,7 @@ async function sendOtpEmail(to, otp, expiresMinutes = 15) {
   const mailOptions = {
     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to,
-    subject: 'Kode Verifikasi (OTP) - Aplikasi',
+    subject: 'Kode Verifikasi Email',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 10px; padding: 20px; background-color: #fafafa;">
         <h2 style="text-align: center; color: #333;">🔒 Verifikasi Akun Anda</h2>
@@ -50,7 +50,7 @@ async function sendOtpEmail(to, otp, expiresMinutes = 15) {
         <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;" />
 
         <p style="font-size: 12px; color: #aaa; text-align: center;">
-          &copy; ${new Date().getFullYear()} Aplikasi Kita. Semua Hak Dilindungi.
+          &copy; ${new Date().getFullYear()} PT PlanHub Kreatif Nusantara. Semua Hak Dilindungi.
         </p>
       </div>
     `
