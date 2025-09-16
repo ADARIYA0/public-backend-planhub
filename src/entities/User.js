@@ -12,23 +12,23 @@ module.exports = new EntitySchema({
         email: {
             type: 'varchar',
             length: 255,
-            unique: true,
             nullable: false
         },
         no_handphone: {
             type: 'varchar',
             length: 20,
-            unique: true,
             nullable: false
         },
         password: {
             type: 'varchar',
             length: 255,
-            nullable: false
+            nullable: false,
+            select: false
+            
         },
         alamat: {
             type: 'text',
-            nullable: true
+            nullable: false
         },
         pendidikan_terakhir: {
             type: 'enum',
@@ -50,11 +50,30 @@ module.exports = new EntitySchema({
         otp_expiry: {
             type: 'datetime',
             nullable: true
+        },
+        reset_otp: {
+            type: 'varchar',
+            length: 10,
+            nullable: true
+        },
+        reset_otp_expiry: {
+            type: 'datetime',
+            nullable: true
+        },
+        created_at: {
+            type: 'datetime',
+            createDate: true,
+            nullable: true
+        },
+        updated_at: {
+            type: 'datetime',
+            updateDate: true,
+            nullable: true
         }
     },
     relations: {
-        attendances: {
-            target: 'EventAttendance',
+        attendance: {
+            target: 'Attendance',
             type: 'one-to-many',
             inverseSide: 'user'
         }

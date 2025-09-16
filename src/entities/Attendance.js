@@ -1,18 +1,17 @@
 const { EntitySchema } = require('typeorm');
 
 module.exports = new EntitySchema({
-    name: 'EventAttendance',
+    name: 'Attendance',
     tableName: 'daftar_hadir',
     columns: {
         id: {
-            type: 'int',
-            primary: true,
+            type: 'int', primary: true,
             generated: true
         },
         otp: {
-            type: 'varchar',
-            length: 10,
-            nullable: true
+            type: 'varchar', length: 10,
+            nullable: true,
+            select: false
         },
         status_absen: {
             type: 'enum',
@@ -23,26 +22,27 @@ module.exports = new EntitySchema({
         waktu_absen: {
             type: 'datetime',
             nullable: true
+        },
+        created_at: {
+            type: 'datetime',
+            createDate: true,
+            nullable: true
         }
     },
     relations: {
         user: {
             target: 'User',
             type: 'many-to-one',
-            inverseSide: 'attendances',
-            joinColumn: {
-                name: 'user_id'
-            },
-            nullable: false
+            joinColumn: { name: 'user_id' },
+            inverseSide: 'attendance',
+            onDelete: 'CASCADE'
         },
         event: {
-            target: 'Events',
+            target: 'Event',
             type: 'many-to-one',
-            inverseSide: 'attendances',
-            joinColumn: {
-                name: 'kegiatan_id'
-            },
-            nullable: false
+            joinColumn: { name: 'kegiatan_id' },
+            inverseSide: 'attendance',
+            onDelete: 'CASCADE'
         }
     }
 });

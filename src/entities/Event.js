@@ -1,7 +1,7 @@
 const { EntitySchema } = require('typeorm');
 
 module.exports = new EntitySchema({
-    name: 'Events',
+    name: 'Event',
     tableName: 'kegiatan',
     columns: {
         id: {
@@ -12,13 +12,13 @@ module.exports = new EntitySchema({
         judul_kegiatan: {
             type: 'varchar',
             length: 255,
-            nullable: false
+            nullable: false,
         },
         slug: {
             type: 'varchar',
-            length: 100,
-            nullable: true,
-            unique: true
+            length: 255,
+            unique: true,
+            nullable: true
         },
         deskripsi_kegiatan: {
             type: 'text',
@@ -32,7 +32,7 @@ module.exports = new EntitySchema({
         flyer_kegiatan: {
             type: 'varchar',
             length: 255,
-            nullable: false
+            nullable: true
         },
         sertifikat_kegiatan: {
             type: 'varchar',
@@ -40,13 +40,13 @@ module.exports = new EntitySchema({
             nullable: false
         },
         gambar_kegiatan: {
-            type: 'longblob',
+            type: 'varchar',
+            length: 255,
             nullable: false
         },
         kapasitas_peserta: {
             type: 'int',
-            default: 0,
-            nullable: false
+            default: 0
         },
         waktu_mulai: {
             type: 'datetime',
@@ -55,19 +55,25 @@ module.exports = new EntitySchema({
         waktu_berakhir: {
             type: 'datetime',
             nullable: false
+        },
+        created_at: {
+            type: 'datetime',
+            createDate: true
+        },
+        updated_at: {
+            type: 'datetime',
+            updateDate: true
         }
     },
     relations: {
         category: {
             target: 'EventCategory',
             type: 'many-to-one',
-            joinColumn: {
-                name: 'kategori_id'
-            },
-            nullable: false
+            joinColumn: { name: 'kategori_id' },
+            inverseSide: 'event'
         },
-        attendances: {
-            target: 'EventAttendance',
+        attendance: {
+            target: 'Attendance',
             type: 'one-to-many',
             inverseSide: 'event'
         }

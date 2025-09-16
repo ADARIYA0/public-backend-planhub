@@ -22,7 +22,6 @@ const logger = createLogger({
       )
     }),
 
-    // File dengan rotate per hari
     new transports.DailyRotateFile({
       filename: 'logs/app-%DATE%.log',
       datePattern: 'YYYY-MM-DD',

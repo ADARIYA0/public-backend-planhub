@@ -11,24 +11,30 @@ module.exports = new EntitySchema({
         },
         nama_kategori: {
             type: 'varchar',
-            length: 100,
-            nullable: false
+            length: 150
         },
         slug: {
             type: 'varchar',
-            length: 100,
-            nullable: true,
+            length: 150,
             unique: true
         },
         kategori_logo: {
             type: 'varchar',
             length: 255,
             nullable: true
+        },
+        created_at: {
+            type: 'datetime',
+            createDate: true
+        },
+        updated_at: {
+            type: 'datetime',
+            updateDate: true
         }
     },
     relations: {
         event: {
-            target: 'Events',
+            target: 'Event',
             type: 'one-to-many',
             inverseSide: 'category'
         }

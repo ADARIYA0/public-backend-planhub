@@ -17,15 +17,12 @@ function getExpiryDate(minutes) {
 
 // REGISTER
 exports.register = async (req, res) => {
-    const ip = req.ip || req.connection.remoteAddress;
-    const agent = req.headers['user-agent'];
-
     try {
         const { email, no_handphone, password, alamat, pendidikan_terakhir } = req.body;
 
-        logger.info(`POST /auth/register accessed, email=${email}, ip=${ip}, agent=${agent}`);
+        logger.info(`POST /auth/register accessed, email=${email}`);
 
-        // Cari user yang punya email ATAU nomor handphone sama
+        // Cari user dengan email/nomor handphone sama
         const existingUsers = await userRepository.find({
             where: [
                 { email },
@@ -35,16 +32,12 @@ exports.register = async (req, res) => {
 
         let errors = [];
         for (const u of existingUsers) {
-            if (u.email === email) {
-                errors.push('Email sudah terdaftar');
-            }
-            if (u.no_handphone === no_handphone) {
-                errors.push('Nomor handphone sudah terdaftar');
-            }
+            if (u.email === email) errors.push('Email sudah terdaftar');
+            if (u.no_handphone === no_handphone) errors.push('Nomor handphone sudah terdaftar');
         }
 
         if (errors.length > 0) {
-            logger.warn(`Registration failed: ${errors.join(', ')}, ip=${ip}, email=${email}`);
+            logger.warn(`Registration failed: ${errors.join(', ')}, email=${email}`);
             return res.status(400).json({ message: errors });
         }
 
@@ -84,34 +77,31 @@ exports.register = async (req, res) => {
 
 // LOGIN    
 exports.login = async (req, res) => {
-    const ip = req.ip || req.connection.remoteAddress;
-    const agent = req.headers['user-agent'];
-
     try {
         const { email, password } = req.body;
 
-        logger.info(`POST /auth/login accessed, email=${email}, ip=${ip}, agent=${agent}`);
+        logger.info(`POST /auth/login accessed, email=${email}`);
 
         const user = await userRepository.findOne({ where: { email } });
         if (!user) {
-            logger.warn(`Login failed: user not found, email=${email}, ip=${ip}`);
+            logger.warn(`Login failed: user not found, email=${email}`);
             return res.status(404).json({ message: 'User tidak ditemukan' });
         }
 
         if (user.status_akun !== 'aktif') {
-            logger.warn(`Login failed: account not verified, email=${email}, ip=${ip}`);
+            logger.warn(`Login failed: account not verified, email=${email}`);
             return res.status(403).json({ message: 'Akun belum terverifikasi. Silakan verifikasi lewat OTP.' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            logger.warn(`Login failed: wrong password, email=${email}, ip=${ip}`);
+            logger.warn(`Login failed: wrong password, email=${email}`);
             return res.status(400).json({ message: 'Password salah' });
         }
 
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        logger.info(`Login successful: userId=${user.id}, email=${email}, ip=${ip}`);
+        logger.info(`Login successful: userId=${user.id}, email=${email}`);
         logger.debug(`Generated JWT payload: ${JSON.stringify({ id: user.id })}`);
 
         res.status(200).json({ message: 'Login berhasil', token });
@@ -123,11 +113,9 @@ exports.login = async (req, res) => {
 
 // VERIFY OTP
 exports.verifyOtp = async (req, res) => {
-    const ip = req.ip || req.connection.remoteAddress;
-
     try {
         const { email, otp } = req.body;
-        logger.info(`POST /auth/verify-otp accessed, email=${email}, ip=${ip}`);
+        logger.info(`POST /auth/verify-otp accessed, email=${email}`);
 
         if (!email || !otp) {
             return res.status(400).json({ message: 'Email dan OTP diperlukan' });
@@ -172,11 +160,9 @@ exports.verifyOtp = async (req, res) => {
 
 // RESEND OTP
 exports.resendOtp = async (req, res) => {
-    const ip = req.ip || req.connection.remoteAddress;
-
     try {
         const { email } = req.body;
-        logger.info(`POST /auth/resend-otp accessed, email=${email}, ip=${ip}`);
+        logger.info(`POST /auth/resend-otp accessed, email=${email}`);
 
         if (!email) return res.status(400).json({ message: 'Email diperlukan' });
 
@@ -209,13 +195,11 @@ exports.resendOtp = async (req, res) => {
     }
 };
 
-// LOGOUT (meminta verifyToken middleware agar req.user tersedia)
+// LOGOUT
 exports.logout = async (req, res) => {
-    const ip = req.ip || req.connection.remoteAddress;
-
     try {
         const userId = req.user?.id || 'unknown';
-        logger.info(`User logout: userId=${userId}, ip=${ip}, url=${req.originalUrl}`);
+        logger.info(`User logout: userId=${userId}`);
         res.status(200).json({ message: 'Logout berhasil (hapus token di client)' });
     } catch (error) {
         logger.error(`Logout error: ${error.message}`, { stack: error.stack });

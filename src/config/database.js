@@ -13,10 +13,10 @@ const AppDataSource = new DataSource({
   synchronize: true, // jangan aktifkan di production (hanya untuk development)
   logging: false,
   entities: [
-    require('../entities/Events/Event'),
-    require('../entities/Events/EventAttendance'),
-    require('../entities/Events/EventCategory'),
-    require('../entities/User')
+    require('../entities/User'),
+    require('../entities/Event'),
+    require('../entities/EventCategory'),
+    require('../entities/Attendance')
   ]
 });
 
