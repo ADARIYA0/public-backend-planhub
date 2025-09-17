@@ -48,6 +48,13 @@ module.exports = new EntitySchema({
             type: 'int',
             default: 0
         },
+        harga: {
+            type: 'decimal',
+            precision: 10,
+            scale: 2,
+            default: 0,
+            nullable: false
+        },
         waktu_mulai: {
             type: 'datetime',
             nullable: false
