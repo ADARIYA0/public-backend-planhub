@@ -8,9 +8,9 @@ const verifyRefreshToken = (req, res, next) => {
         return res.status(401).json({ message: 'Refresh token tidak ditemukan' });
     }
 
-    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, decoded) => {
-        if (err) {
-            const msg = err.name === 'TokenExpiredError'
+    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (error, decoded) => {
+        if (error) {
+            const msg = error.name === 'TokenExpiredError'
                 ? 'Refresh token kadaluarsa, silakan login ulang'
                 : 'Refresh token tidak valid';
             logger.warn(`${msg}, ip=${req.ip}`);

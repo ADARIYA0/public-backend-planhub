@@ -11,14 +11,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// verify transporter at startup (opsional)
-transporter.verify((err, success) => {
-  if (err) {
-    logger.error(`Email transporter verify failed: ${err.message}`);
-  } else {
+async function verifyTransporter() {
+  try {
+    await transporter.verify();
     logger.info('Email transporter ready');
+  } catch (error) {
+    logger.error(`Email transporter verify failed: ${error.message}`);
+    throw error;
   }
-});
+}
 
 async function sendOtpEmail(to, otp, expiresMinutes = 15) {
   const mailOptions = {
@@ -68,4 +69,4 @@ async function sendOtpEmail(to, otp, expiresMinutes = 15) {
   }
 }
 
-module.exports = { sendOtpEmail };
+module.exports = { verifyTransporter, sendOtpEmail };

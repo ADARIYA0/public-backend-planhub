@@ -60,8 +60,8 @@ exports.getAllEvent = async (req, res) => {
 
         logger.info(`Events retrieved: count=${events.length}, total=${total}`);
         return res.json({ meta: { page, limit, total }, data: events });
-    } catch (err) {
-        logger.error(`getAllEvent error: ${err.message}`, { stack: err.stack });
+    } catch (error) {
+        logger.error(`getAllEvent error: ${error.message}`, { stack: error.stack });
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -106,8 +106,8 @@ exports.getEventById = async (req, res) => {
 
         logger.info(`Event retrieved successfully: id=${id}`);
         return res.json(response);
-    } catch (err) {
-        logger.error(`getEventById error: ${err.message}`, { stack: err.stack });
+    } catch (error) {
+        logger.error(`getEventById error: ${error.message}`, { stack: error.stack });
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
