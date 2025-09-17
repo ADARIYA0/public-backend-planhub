@@ -24,7 +24,7 @@ module.exports = new EntitySchema({
             length: 255,
             nullable: false,
             select: false
-            
+
         },
         alamat: {
             type: 'text',

@@ -1,4 +1,6 @@
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
+const { isBlacklisted } = require('../utils/tokenBlacklist');
 
 const verifyToken = (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
@@ -10,6 +12,11 @@ const verifyToken = (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
+
+    if (isBlacklisted(token)) {
+        logger.warn(`Blacklisted token used, ip=${ip}`);
+        return res.status(403).json({ message: 'Token tidak valid (blacklisted)' });
+    }
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);

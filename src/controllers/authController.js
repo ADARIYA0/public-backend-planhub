@@ -1,11 +1,13 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
-const User = require('../entities/User');
+const { addToBlacklist } = require('../utils/tokenBlacklist');
 const { AppDataSource } = require('../config/database');
 const { sendOtpEmail } = require('../services/emailService');
+const ms = require('ms');
 
 const userRepository = AppDataSource.getRepository('User');
+const userTokenRepository = AppDataSource.getRepository('UserToken');
 
 function generateOtp() {
     return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit
@@ -15,6 +17,23 @@ function getExpiryDate(minutes) {
     return new Date(Date.now() + minutes * 60 * 1000);
 }
 
+function generateTokens(userId) {
+    const accessToken = jwt.sign(
+        { id: userId },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_ACCESS_EXPIRES }
+    );
+
+    const refreshToken = jwt.sign(
+        { id: userId },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: process.env.JWT_REFRESH_EXPIRES }
+    );
+
+    logger.debug(`Generated tokens for userId=${userId}`);
+    return { accessToken, refreshToken };
+}
+
 // REGISTER
 exports.register = async (req, res) => {
     try {
@@ -22,12 +41,8 @@ exports.register = async (req, res) => {
 
         logger.info(`POST /auth/register accessed, email=${email}`);
 
-        // Cari user dengan email/nomor handphone sama
         const existingUsers = await userRepository.find({
-            where: [
-                { email },
-                { no_handphone }
-            ]
+            where: [{ email }, { no_handphone }]
         });
 
         let errors = [];
@@ -82,7 +97,11 @@ exports.login = async (req, res) => {
 
         logger.info(`POST /auth/login accessed, email=${email}`);
 
-        const user = await userRepository.findOne({ where: { email } });
+        const user = await userRepository
+            .createQueryBuilder("user")
+            .addSelect("user.password")
+            .where("user.email = :email", { email })
+            .getOne();
         if (!user) {
             logger.warn(`Login failed: user not found, email=${email}`);
             return res.status(404).json({ message: 'User tidak ditemukan' });
@@ -99,14 +118,74 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Password salah' });
         }
 
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const { accessToken, refreshToken } = generateTokens(user.id);
+
+        // simpan refresh token di user_tokens
+        const userToken = userTokenRepository.create({
+            user,
+            refresh_token: refreshToken,
+            user_agent: req.headers['user-agent'] || null,
+            ip_address: req.ip,
+            created_at: new Date(),
+            expires_at: new Date(Date.now() + ms(process.env.JWT_REFRESH_EXPIRES))
+        });
+        await userTokenRepository.save(userToken);
 
         logger.info(`Login successful: userId=${user.id}, email=${email}`);
         logger.debug(`Generated JWT payload: ${JSON.stringify({ id: user.id })}`);
 
-        res.status(200).json({ message: 'Login berhasil', token });
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.COOKIE_SECURE === 'true',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+            path: "/api/auth/refresh-token",
+            maxAge: ms(process.env.JWT_REFRESH_EXPIRES)
+        });
+
+        res.status(200).json({
+            message: 'Login berhasil',
+            accessToken
+        });
     } catch (error) {
         logger.error(`Login error for email=${req.body.email}: ${error.message}`, { stack: error.stack });
+        res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
+    }
+};
+
+// REFRESH TOKEN
+exports.refreshToken = async (req, res) => {
+    try {
+        const { id } = req.user;
+        const refreshToken = req.refreshToken;
+
+        const userToken = await userTokenRepository.findOne({
+            where: { refresh_token: refreshToken },
+            relations: ['user']
+        });
+
+        if (!userToken) {
+            logger.warn(`Refresh failed: token not found in DB, userId=${id}`);
+            return res.status(403).json({ message: 'Refresh token tidak ditemukan atau sudah dicabut' });
+        }
+
+        const { accessToken, refreshToken: newRefreshToken } = generateTokens(id);
+
+        userToken.refresh_token = newRefreshToken;
+        userToken.expires_at = new Date(Date.now() + ms(process.env.JWT_REFRESH_EXPIRES));
+        await userTokenRepository.save(userToken);
+
+        logger.info(`Refresh successful: userId=${id}`);
+
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.COOKIE_SECURE === 'true',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+            path: "/api/auth/refresh-token",
+            maxAge: ms(process.env.JWT_REFRESH_EXPIRES)
+        });
+        res.status(200).json({ accessToken });
+    } catch (error) {
+        logger.error(`refreshToken error: ${error.message}`, { stack: error.stack });
         res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
     }
 };
@@ -198,9 +277,17 @@ exports.resendOtp = async (req, res) => {
 // LOGOUT
 exports.logout = async (req, res) => {
     try {
-        const userId = req.user?.id || 'unknown';
-        logger.info(`User logout: userId=${userId}`);
-        res.status(200).json({ message: 'Logout berhasil (hapus token di client)' });
+        const accessToken = req.headers.authorization?.split(' ')[1];
+        if (accessToken) addToBlacklist(accessToken);
+
+        const refreshToken = req.cookies?.refreshToken;
+        if (refreshToken) {
+            await userTokenRepository.delete({ refresh_token: refreshToken });
+        }
+
+        logger.info(`User logout: userId=${req.user?.id || 'unknown'}`);
+        res.clearCookie("refreshToken");
+        res.status(200).json({ message: 'Logout berhasil' });
     } catch (error) {
         logger.error(`Logout error: ${error.message}`, { stack: error.stack });
         res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });

@@ -14,6 +14,7 @@ const AppDataSource = new DataSource({
   logging: false,
   entities: [
     require('../entities/User'),
+    require('../entities/UserToken'),
     require('../entities/Event'),
     require('../entities/EventCategory'),
     require('../entities/Attendance')
