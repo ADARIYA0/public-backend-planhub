@@ -1,4 +1,5 @@
 const { AppDataSource } = require('../config/database');
+const { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addMonths } = require('date-fns');
 const logger = require('../utils/logger');
 
 const eventRepo = () => AppDataSource.getRepository('Event');
@@ -18,16 +19,50 @@ exports.getAllEvent = async (req, res) => {
             .orderBy('kegiatan.waktu_mulai', 'ASC');
 
         if (req.query.category) {
-            qb.andWhere('category.id = :cat', { cat: parseInt(req.query.category) });
-            logger.debug(`Filtering by category=${req.query.category}`);
+            qb.andWhere('category.slug = :slug', { slug: req.query.category });
+            logger.debug(`Filtering by category slug=${req.query.category}`);
         }
+
         if (req.query.search) {
             qb.andWhere('(kegiatan.judul_kegiatan LIKE :q OR kegiatan.deskripsi_kegiatan LIKE :q)', { q: `%${req.query.search}%` });
             logger.debug(`Searching with query="${req.query.search}"`);
         }
+
         if (req.query.upcoming === 'true') {
             qb.andWhere('kegiatan.waktu_berakhir >= :now', { now: new Date() });
             logger.debug('Filtering only upcoming events');
+        }
+
+        if (req.query.time_range) {
+            const now = new Date();
+
+            switch (req.query.time_range) {
+                case 'today':
+                    qb.andWhere('DATE(kegiatan.waktu_mulai) = CURDATE()');
+                    break;
+                case 'this_week':
+                    qb.andWhere('kegiatan.waktu_mulai BETWEEN :start AND :end', {
+                        start: startOfWeek(now, { weekStartsOn: 1 }),
+                        end: endOfWeek(now, { weekStartsOn: 1 })
+                    });
+                    break;
+                case 'this_month':
+                    qb.andWhere('kegiatan.waktu_mulai BETWEEN :start AND :end', {
+                        start: startOfMonth(now),
+                        end: endOfMonth(now)
+                    });
+                    break;
+                case 'next_month':
+                    qb.andWhere('kegiatan.waktu_mulai BETWEEN :start AND :end', {
+                        start: startOfMonth(addMonths(now, 1)),
+                        end: endOfMonth(addMonths(now, 1))
+                    });
+                    break;
+                default:
+                    logger.warn(`Unknown time_range filter: ${req.query.time_range}`);
+            }
+
+            logger.debug(`Filtering by time_range=${req.query.time_range}`);
         }
 
         const [items, total] = await qb.skip(offset).take(limit).getManyAndCount();
@@ -48,6 +83,7 @@ exports.getAllEvent = async (req, res) => {
                 flyer_kegiatan: ev.flyer_kegiatan,
                 gambar_kegiatan: ev.gambar_kegiatan,
                 kapasitas_peserta: ev.kapasitas_peserta,
+                harga: ev.harga,
                 waktu_mulai: ev.waktu_mulai,
                 waktu_berakhir: ev.waktu_berakhir,
                 kategori: ev.category
@@ -62,6 +98,53 @@ exports.getAllEvent = async (req, res) => {
         return res.json({ meta: { page, limit, total }, data: events });
     } catch (error) {
         logger.error(`getAllEvent error: ${error.message}`, { stack: error.stack });
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// GET EVENT BY SLUG
+exports.getEventBySlug = async (req, res) => {
+    try {
+        const { slug } = req.params;
+        logger.info(`GET /event/slug/${slug} accessed`);
+
+        const ev = await eventRepo().findOne({
+            where: { slug },
+            relations: ['category']
+        });
+
+        if (!ev) {
+            logger.warn(`Event not found: slug=${slug}`);
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        const attendeeCount = await attendanceRepo().createQueryBuilder('d')
+            .where('d.kegiatan_id = :id', { id: ev.id })
+            .getCount();
+
+        const response = {
+            id: ev.id,
+            judul_kegiatan: ev.judul_kegiatan,
+            slug: ev.slug,
+            deskripsi_kegiatan: ev.deskripsi_kegiatan,
+            lokasi_kegiatan: ev.lokasi_kegiatan,
+            flyer_kegiatan: ev.flyer_kegiatan,
+            gambar_kegiatan: ev.gambar_kegiatan,
+            kapasitas_peserta: ev.kapasitas_peserta,
+            harga: ev.harga,
+            waktu_mulai: ev.waktu_mulai,
+            waktu_berakhir: ev.waktu_berakhir,
+            kategori: ev.category
+                ? { id: ev.category.id, nama_kategori: ev.category.nama_kategori, slug: ev.category.slug }
+                : null,
+            attendee_count: attendeeCount,
+            is_full: (ev.kapasitas_peserta > 0) && (attendeeCount >= ev.kapasitas_peserta)
+        };
+
+        logger.info(`Event retrieved successfully: slug=${slug}`);
+        return res.json(response);
+    } catch (error) {
+        logger.error(`getEventBySlug error: ${error.message}`, { stack: error.stack });
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -95,6 +178,7 @@ exports.getEventById = async (req, res) => {
             flyer_kegiatan: ev.flyer_kegiatan,
             gambar_kegiatan: ev.gambar_kegiatan,
             kapasitas_peserta: ev.kapasitas_peserta,
+            harga: ev.harga,
             waktu_mulai: ev.waktu_mulai,
             waktu_berakhir: ev.waktu_berakhir,
             kategori: ev.category

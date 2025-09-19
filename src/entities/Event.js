@@ -37,7 +37,7 @@ module.exports = new EntitySchema({
         sertifikat_kegiatan: {
             type: 'varchar',
             length: 255,
-            nullable: false
+            nullable: true
         },
         gambar_kegiatan: {
             type: 'varchar',
