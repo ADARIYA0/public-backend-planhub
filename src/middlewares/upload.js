@@ -14,11 +14,7 @@ Object.values(UPLOAD_DIRS).forEach(dir => {
     }
 });
 
-const MAX_SIZES = {
-    flyer_kegiatan: 20 * 1024 * 1024,       // 20MB
-    sertifikat_kegiatan: 20 * 1024 * 1024,  // 20MB
-    gambar_kegiatan: 5 * 1024 * 1024        // 5MB
-};
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -34,23 +30,21 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    const allowed = /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype) || file.mimetype === 'application/pdf';
+    const allowed = /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype);
     if (!allowed) {
-        return cb(new Error('Only image and PDF files are allowed'), false);
+        return cb(new Error('Only image files are allowed (JPEG, PNG, WEBP, GIF)'), false);
     }
 
-    const maxSize = MAX_SIZES[file.fieldname] || (20 * 1024 * 1024);
-    if (file.size > maxSize) {
-        return cb(new Error(`File ${file.fieldname} exceeds the maximum size of ${maxSize / (1024 * 1024)}MB`), false);
+    if (file.size > MAX_SIZE) {
+        return cb(new Error(`File ${file.fieldname} exceeds the maximum size of 10MB`), false);
     }
 
     cb(null, true);
 };
 
-// Still using the large limit so the multer can accept files up to 20MB
 const upload = multer({
     storage,
-    limits: { fileSize: 20 * 1024 * 1024 },
+    limits: { fileSize: MAX_SIZE },
     fileFilter
 });
 
