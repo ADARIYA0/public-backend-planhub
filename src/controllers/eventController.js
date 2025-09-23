@@ -1,7 +1,8 @@
 const { AppDataSource } = require('../config/database');
-const { cleanupFiles } = require('../utils/fileHelper');
+const { cleanupFiles, renameUploadedFileToSlug } = require('../utils/fileHelper');
 const { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addMonths } = require('date-fns');
 const logger = require('../utils/logger');
+const path = require('path');
 const slugify = require('slugify');
 
 const attendanceRepo = () => AppDataSource.getRepository('Attendance');
@@ -202,7 +203,6 @@ exports.getEventById = async (req, res) => {
 // CREATE EVENT
 exports.createEvent = async (req, res) => {
     try {
-        // ringkasan request untuk logging (jangan log deskripsi panjang)
         const meta = {
             ip: req.ip,
             userAgent: req.get('User-Agent'),
@@ -238,6 +238,21 @@ exports.createEvent = async (req, res) => {
             }
         }
 
+        if (judul_kegiatan && waktu_mulai) {
+            const title = judul_kegiatan.trim();
+            const startDate = new Date(waktu_mulai);
+            const existing = await eventRepo()
+                .createQueryBuilder('e')
+                .where('LOWER(e.judul_kegiatan) = LOWER(:title)', { title })
+                .andWhere('DATE(e.waktu_mulai) = DATE(:start)', { start: startDate })
+                .getOne();
+
+            if (existing) {
+                logger.warn('Duplicate event title at same date detected', { title, start: startDate });
+                return res.status(409).json({ message: 'Event dengan judul yang sama pada tanggal tersebut sudah ada' });
+            }
+        }
+
         // generate slug
         let eventSlug = providedSlug ? slugify(providedSlug, { lower: true, strict: true }) :
             slugify(judul_kegiatan || '', { lower: true, strict: true });
@@ -251,9 +266,39 @@ exports.createEvent = async (req, res) => {
             exists = await eventRepo().findOne({ where: { slug: eventSlug } });
         }
 
-        const flyer = req.files?.flyer_kegiatan?.[0]?.filename || null;
-        const gambar = req.files?.gambar_kegiatan?.[0]?.filename || null;
-        const sertifikat = req.files?.sertifikat_kegiatan?.[0]?.filename || null;
+        const uploadBase = path.join(__dirname, '..', '..', 'uploads');
+
+        const flyerFile = req.files?.flyer_kegiatan?.[0] || null;
+        const gambarFile = req.files?.gambar_kegiatan?.[0] || null;
+        const sertifikatFile = req.files?.sertifikat_kegiatan?.[0] || null;
+
+        let flyer = null;
+        let gambar = null;
+        let sertifikat = null;
+
+        try {
+            if (flyerFile) {
+                const res = await renameUploadedFileToSlug(flyerFile, path.join(uploadBase, 'flyer'), `${eventSlug}-flyer`);
+                flyer = res.filename;
+            }
+            if (gambarFile) {
+                const res = await renameUploadedFileToSlug(gambarFile, path.join(uploadBase, 'events'), `${eventSlug}-image`);
+                gambar = res.filename;
+            }
+            if (sertifikatFile) {
+                const res = await renameUploadedFileToSlug(sertifikatFile, path.join(uploadBase, 'certificates'), `${eventSlug}-certificate`);
+                sertifikat = res.filename;
+            }
+        } catch (err) {
+            const filePathsToCleanup = [
+                flyerFile?.path,
+                gambarFile?.path,
+                sertifikatFile?.path
+            ].filter(Boolean);
+            cleanupFiles(filePathsToCleanup);
+            logger.error('File rename to slug failed', { error: err.message, stack: err.stack });
+            return res.status(500).json({ message: 'Failed to process uploaded files' });
+        }
 
         // fallback for image if database cannot be null
         const gambar_final = gambar || 'default-event.png';
@@ -292,15 +337,36 @@ exports.createEvent = async (req, res) => {
             }
         });
     } catch (error) {
-        const allFiles = [
-            req.files?.flyer_kegiatan?.[0]?.path,
-            req.files?.gambar_kegiatan?.[0]?.path,
-            req.files?.sertifikat_kegiatan?.[0]?.path
-        ].filter(Boolean);
+        const toCleanup = [];
+        toCleanup.push(req.files?.flyer_kegiatan?.[0]?.path);
+        toCleanup.push(req.files?.gambar_kegiatan?.[0]?.path);
+        toCleanup.push(req.files?.sertifikat_kegiatan?.[0]?.path);
 
-        cleanupFiles(allFiles);
+        if (flyer) toCleanup.push(path.join(__dirname, '..', '..', 'uploads', 'flyer', flyer));
+        if (gambar) toCleanup.push(path.join(__dirname, '..', '..', 'uploads', 'events', gambar));
+        if (sertifikat) toCleanup.push(path.join(__dirname, '..', '..', 'uploads', 'certificates', sertifikat));
 
-        logger.error('createEvent error', { message: error.message, stack: error.stack });
+        cleanupFiles(toCleanup.filter(Boolean));
+
+        if (error.code === 'ER_DUP_ENTRY' || error?.errno === 1062) {
+            logger.warn('Duplicate entry blocked by DB constraint', {
+                code: error.code,
+                errno: error.errno,
+                message: error.message,
+                stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
+            });
+            return res.status(409).json({
+                message: 'Event dengan judul yang sama sudah ada'
+            });
+        }
+
+        logger.error('createEvent unexpected error', {
+            code: error.code,
+            errno: error.errno,
+            message: error.message,
+            stack: error.stack
+        });
+
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
