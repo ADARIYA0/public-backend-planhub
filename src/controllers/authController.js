@@ -8,6 +8,7 @@ const ms = require('ms');
 
 const userRepository = AppDataSource.getRepository('User');
 const userTokenRepository = AppDataSource.getRepository('UserToken');
+const adminTokenRepository = AppDataSource.getRepository('AdminToken');
 
 function generateOtp() {
     return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit
@@ -17,20 +18,22 @@ function getExpiryDate(minutes) {
     return new Date(Date.now() + minutes * 60 * 1000);
 }
 
-function generateTokens(userId) {
+function generateTokens(userId, role = 'user') {
+    const payload = { id: userId, role };
+
     const accessToken = jwt.sign(
-        { id: userId },
+        payload,
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_ACCESS_EXPIRES }
     );
 
     const refreshToken = jwt.sign(
-        { id: userId },
+        payload,
         process.env.JWT_REFRESH_SECRET,
         { expiresIn: process.env.JWT_REFRESH_EXPIRES }
     );
 
-    logger.debug(`Generated tokens for userId=${userId}`);
+    logger.debug(`Generated tokens for subjectId=${userId}, role=${role}`);
     return { accessToken, refreshToken };
 }
 
@@ -118,7 +121,7 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Password salah' });
         }
 
-        const { accessToken, refreshToken } = generateTokens(user.id);
+        const { accessToken, refreshToken } = generateTokens(user.id, 'user');
 
         // simpan refresh token di user_tokens
         const userToken = userTokenRepository.create({
@@ -155,26 +158,31 @@ exports.login = async (req, res) => {
 // REFRESH TOKEN
 exports.refreshToken = async (req, res) => {
     try {
-        const { id } = req.user;
+        const { id, role } = req.user;
         const refreshToken = req.refreshToken;
 
-        const userToken = await userTokenRepository.findOne({
+        const tokenRepo = role === 'admin'
+            ? adminTokenRepository
+            : userTokenRepository;
+
+        const relationName = role === 'admin' ? 'admin' : 'user';
+        const userToken = await tokenRepo.findOne({
             where: { refresh_token: refreshToken },
-            relations: ['user']
+            relations: [relationName]
         });
 
         if (!userToken) {
-            logger.warn(`Refresh failed: token not found in DB, userId=${id}`);
+            logger.warn(`Refresh failed: token not found in DB, subjectId=${id}, role=${role}`);
             return res.status(403).json({ message: 'Refresh token tidak ditemukan atau sudah dicabut' });
         }
 
-        const { accessToken, refreshToken: newRefreshToken } = generateTokens(id);
+        const { accessToken, refreshToken: newRefreshToken } = generateTokens(id, role);
 
         userToken.refresh_token = newRefreshToken;
         userToken.expires_at = new Date(Date.now() + ms(process.env.JWT_REFRESH_EXPIRES));
-        await userTokenRepository.save(userToken);
+        await tokenRepo.save(userToken);
 
-        logger.info(`Refresh successful: userId=${id}`);
+        logger.info(`Refresh successful: subjectId=${id}, role=${role}`);
 
         res.cookie("refreshToken", newRefreshToken, {
             httpOnly: true,
@@ -281,15 +289,24 @@ exports.logout = async (req, res) => {
         if (accessToken) addToBlacklist(accessToken);
 
         const refreshToken = req.cookies?.refreshToken;
+        const role = req.user?.role || 'user';
+
         if (refreshToken) {
-            await userTokenRepository.delete({ refresh_token: refreshToken });
+            if (role === 'admin') {
+                await adminTokenRepository.delete({ refresh_token: refreshToken });
+            } else {
+                await userTokenRepository.delete({ refresh_token: refreshToken });
+            }
         }
 
-        logger.info(`User logout: userId=${req.user?.id || 'unknown'}`);
+        // logger sesuai role
+        const actor = role === 'admin' ? 'Admin' : 'User';
+        logger.info(`${actor} logout: ${actor.toLowerCase()}Id=${req.user?.id || 'unknown'}`);
+
         res.clearCookie("refreshToken");
         res.status(200).json({ message: 'Logout berhasil' });
     } catch (error) {
         logger.error(`Logout error: ${error.message}`, { stack: error.stack });
         res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
     }
-};
+}

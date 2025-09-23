@@ -17,7 +17,8 @@ const verifyRefreshToken = (req, res, next) => {
             return res.status(403).json({ message: msg });
         }
 
-        req.user = { id: decoded.id };
+        // IMPORTANT: decoded must include role when token is already created (we will include it)
+        req.user = { id: decoded.id, role: decoded.role || 'user' };
         req.refreshToken = refreshToken;
         next();
     });
