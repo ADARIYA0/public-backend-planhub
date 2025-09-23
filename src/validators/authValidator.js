@@ -2,29 +2,29 @@ const { body } = require('express-validator');
 
 exports.registerValidator = [
     body('email')
-        .notEmpty().withMessage('Email wajib diisi')
-        .isEmail().withMessage('Format email tidak valid'),
+        .notEmpty().withMessage('Email is required')
+        .isEmail().withMessage('Email Format is not valid'),
     body('no_handphone')
-        .notEmpty().withMessage('Nomor handphone wajib diisi'),
+        .notEmpty().withMessage('Nomor Handphone is required'),
     body('password')
         .notEmpty().withMessage('Password wajib diisi')
-        .isLength({ min: 8 }).withMessage('Password minimal 8 karakter')
-        .matches(/\d/).withMessage('Password harus mengandung angka')
-        .matches(/[A-Z]/).withMessage('Password harus mengandung huruf besar')
-        .matches(/[a-z]/).withMessage('Password harus mengandung huruf kecil')
-        .matches(/[\W_]/).withMessage('Password harus mengandung karakter spesial'),
+        .isLength({ min: 8 }).withMessage('Password must be 8 characters')
+        .matches(/\d/).withMessage('Password must contain numbers')
+        .matches(/[A-Z]/).withMessage('Password must contain uppercase letters')
+        .matches(/[a-z]/).withMessage('Password must contain lowercase letters')
+        .matches(/[\W_]/).withMessage('Password must contain special characters'),
     body('alamat')
-        .notEmpty().withMessage('Alamat wajib diisi'),
+        .notEmpty().withMessage('Alamat is required'),
     body('pendidikan_terakhir')
-        .notEmpty().withMessage('Pendidikan terakhir wajib diisi')
+        .notEmpty().withMessage('Pendidikan Terakhir is required')
         .isIn(['SD/MI', 'SMP/MTS', 'SMA/SMK', 'Diploma', 'Sarjana', 'Lainnya'])
-        .withMessage('Pendidikan terakhir tidak valid')
+        .withMessage('Pendidikan Terakhir is not valid')
 ];
 
 exports.loginValidator = [
     body('email')
-        .notEmpty().withMessage('Email wajib diisi')
-        .isEmail().withMessage('Format email tidak valid'),
+        .notEmpty().withMessage('Email is required')
+        .isEmail().withMessage('Email Format is not valid'),
     body('password')
-        .notEmpty().withMessage('Password wajib diisi')
+        .notEmpty().withMessage('Password is required')
 ];
