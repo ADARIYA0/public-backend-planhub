@@ -3,9 +3,9 @@ const path = require('path');
 const fs = require('fs');
 
 const UPLOAD_DIRS = {
-    flyer_kegiatan: path.join(__dirname, '..', '..', 'uploads', 'flyer'), // uploads/flyer
-    gambar_kegiatan: path.join(__dirname, '..', '..', 'uploads', 'events'), // uploads/events
-    sertifikat_kegiatan: path.join(__dirname, '..', '..', 'uploads', 'certificates') // uploads/certificates
+    flyer_kegiatan: path.join(__dirname, '..', '..', 'uploads', 'flyer'),
+    gambar_kegiatan: path.join(__dirname, '..', '..', 'uploads', 'events'),
+    sertifikat_kegiatan: path.join(__dirname, '..', '..', 'uploads', 'certificates')
 };
 
 Object.values(UPLOAD_DIRS).forEach(dir => {
@@ -13,6 +13,12 @@ Object.values(UPLOAD_DIRS).forEach(dir => {
         fs.mkdirSync(dir, { recursive: true });
     }
 });
+
+const MAX_SIZES = {
+    flyer_kegiatan: 20 * 1024 * 1024,       // 20MB
+    sertifikat_kegiatan: 20 * 1024 * 1024,  // 20MB
+    gambar_kegiatan: 5 * 1024 * 1024        // 5MB
+};
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -28,19 +34,23 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    if (
-        /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype) ||
-        file.mimetype === 'application/pdf'
-    ) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only image and PDF files are allowed'), false);
+    const allowed = /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype) || file.mimetype === 'application/pdf';
+    if (!allowed) {
+        return cb(new Error('Only image and PDF files are allowed'), false);
     }
+
+    const maxSize = MAX_SIZES[file.fieldname] || (20 * 1024 * 1024);
+    if (file.size > maxSize) {
+        return cb(new Error(`File ${file.fieldname} exceeds the maximum size of ${maxSize / (1024 * 1024)}MB`), false);
+    }
+
+    cb(null, true);
 };
 
+// Still using the large limit so the multer can accept files up to 20MB
 const upload = multer({
     storage,
-    limits: { fileSize: parseInt(20 * 1024 * 1024) }, // 20MB
+    limits: { fileSize: 20 * 1024 * 1024 },
     fileFilter
 });
 
