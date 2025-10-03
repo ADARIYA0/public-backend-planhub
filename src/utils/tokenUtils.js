@@ -34,4 +34,9 @@ function isBlacklisted(token) {
     return blacklist.includes(token);
 }
 
-module.exports = { addToBlacklist, generateTokens, getRefreshExpiryDate, isBlacklisted };
+module.exports = {
+    addToBlacklist,
+    generateTokens,
+    getRefreshExpiryDate,
+    isBlacklisted
+};

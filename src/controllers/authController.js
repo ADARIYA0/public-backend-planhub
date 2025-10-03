@@ -1,13 +1,12 @@
 const { AppDataSource } = require('../config/database');
 const { addToBlacklist, generateTokens } = require('../utils/tokenUtils');
+const { getRepository } = require('../utils/getRepository');
 const { sendOtpEmail } = require('../services/emailService');
+const { User } = require('../entities/Auth/User');
+const { UserToken } = require('../entities/Auth/UserToken');
 const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
 const ms = require('ms');
-
-const userRepository = AppDataSource.getRepository('User');
-const userTokenRepository = AppDataSource.getRepository('UserToken');
-const adminTokenRepository = AppDataSource.getRepository('AdminToken');
 
 function generateOtp() {
     return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit
@@ -19,6 +18,8 @@ function getExpiryDate(minutes) {
 
 exports.register = async (req, res) => {
     try {
+        const userRepository = getRepository(User);
+
         const { email, no_handphone, password, alamat, pendidikan_terakhir } = req.body;
 
         logger.info(`POST /auth/register accessed, email=${email}`);
@@ -74,6 +75,9 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
+        const userRepository = getRepository(User);
+        const userTokenRepository = getRepository(UserToken);
+
         const { email, password } = req.body;
 
         logger.info(`POST /auth/login accessed, email=${email}`);
@@ -134,6 +138,9 @@ exports.login = async (req, res) => {
 
 exports.refreshToken = async (req, res) => {
     try {
+        const userTokenRepository = getRepository(UserToken);
+        const adminTokenRepository = getRepository(AdminToken);
+
         const { id, role } = req.user;
         const refreshToken = req.refreshToken;
 
@@ -176,6 +183,8 @@ exports.refreshToken = async (req, res) => {
 
 exports.verifyOtp = async (req, res) => {
     try {
+        const userRepository = getRepository(User);
+
         const { email, otp } = req.body;
         logger.info(`POST /auth/verify-otp accessed, email=${email}`);
 
@@ -222,6 +231,8 @@ exports.verifyOtp = async (req, res) => {
 
 exports.resendOtp = async (req, res) => {
     try {
+        const userRepository = getRepository(User);
+
         const { email } = req.body;
         logger.info(`POST /auth/resend-otp accessed, email=${email}`);
 
@@ -258,6 +269,9 @@ exports.resendOtp = async (req, res) => {
 
 exports.logout = async (req, res) => {
     try {
+        const userTokenRepository = getRepository(UserToken);
+        const adminTokenRepository = getRepository(AdminToken);
+
         const accessToken = req.headers.authorization?.split(' ')[1];
         if (accessToken) addToBlacklist(accessToken);
 

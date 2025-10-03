@@ -1,14 +1,15 @@
-const { AppDataSource } = require('../config/database');
+const { Admin } = require('../entities/Auth/Admin');
+const { AdminToken } = require('../entities/Auth/AdminToken');
 const { generateTokens } = require('../utils/tokenUtils');
+const { getRepository } = require('../utils/getRepository');
 const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
 const ms = require('ms');
 
-const adminRepository = AppDataSource.getRepository('Admin');
-const adminTokenRepository = AppDataSource.getRepository('AdminToken');
-
 exports.registerAdmin = async (req, res) => {
     try {
+        const adminRepository = getRepository(Admin);
+
         const { email, password } = req.body;
         logger.info(`POST /auth/admin/register accessed, email=${email}`);
 
@@ -35,6 +36,9 @@ exports.registerAdmin = async (req, res) => {
 
 exports.loginAdmin = async (req, res) => {
     try {
+        const adminRepository = getRepository(Admin);
+        const adminTokenRepository = getRepository(AdminToken);
+
         const { email, password } = req.body;
         logger.info(`POST /auth/admin/login accessed, email=${email}`);
 
