@@ -3,6 +3,7 @@ const app = require('./app');
 const logger = require('./src/utils/logger');
 const { AppDataSource, connectDB } = require('./src/config/database');
 const { verifyTransporter } = require('./src/services/emailService');
+const { verifyCorsConfig } = require('./src/config/corsOption');
 
 const PORT = process.env.PORT || 6000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -13,6 +14,8 @@ let server;
   try {
     await connectDB();
     await verifyTransporter();
+    verifyCorsConfig();
+
     server = app.listen(PORT, () => {
       logger.info(`Server running in ${NODE_ENV} mode on http://localhost:${PORT}`);
     });
