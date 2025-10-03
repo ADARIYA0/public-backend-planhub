@@ -9,7 +9,6 @@ const attendanceRepo = () => AppDataSource.getRepository('Attendance');
 const categoryRepo = () => AppDataSource.getRepository('EventCategory');
 const eventRepo = () => AppDataSource.getRepository('Event');
 
-// GET ALL EVENTS
 exports.getAllEvent = async (req, res) => {
     try {
         const page = Math.max(parseInt(req.query.page) || 1, 1);
@@ -107,7 +106,6 @@ exports.getAllEvent = async (req, res) => {
     }
 };
 
-// GET EVENT BY SLUG
 exports.getEventBySlug = async (req, res) => {
     try {
         const { slug } = req.params;
@@ -155,7 +153,6 @@ exports.getEventBySlug = async (req, res) => {
     }
 };
 
-// GET EVENT BY ID
 exports.getEventById = async (req, res) => {
     try {
         const id = parseInt(req.params.id);
@@ -203,7 +200,6 @@ exports.getEventById = async (req, res) => {
     }
 };
 
-// CREATE EVENT
 exports.createEvent = async (req, res) => {
     try {
         const meta = {
@@ -256,7 +252,6 @@ exports.createEvent = async (req, res) => {
             }
         }
 
-        // generate slug
         let eventSlug = providedSlug ? slugify(providedSlug, { lower: true, strict: true }) :
             slugify(judul_kegiatan || '', { lower: true, strict: true });
 
@@ -303,7 +298,6 @@ exports.createEvent = async (req, res) => {
             return res.status(500).json({ message: 'Failed to process uploaded files' });
         }
 
-        // fallback for image if database cannot be null
         const gambar_final = gambar || 'default-event.png';
 
         const eventData = {

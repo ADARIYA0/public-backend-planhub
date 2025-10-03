@@ -48,12 +48,10 @@ const shutdown = async (signal) => {
   }
 };
 
-// Catch termination signals
 ['SIGINT', 'SIGTERM'].forEach((signal) => {
   process.on(signal, () => shutdown(signal));
 });
 
-// SIGKILL cannot be caught, but log a warning for clarity
 process.on('SIGKILL', () => {
   logger.warn('SIGKILL received: cannot perform graceful shutdown, process will be killed immediately.');
 })

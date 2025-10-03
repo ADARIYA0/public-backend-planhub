@@ -1,14 +1,14 @@
 {
-  "name": "server-planhub-event-ujikom",
+  "name": "server-planhub",
   "version": "1.0.0",
   "description": "",
-  "homepage": "https://github.com/ADARIYA0/server-event-ujikom#readme",
+  "homepage": "https://github.com/ADARIYA0/server-planhub#readme",
   "bugs": {
-    "url": "https://github.com/ADARIYA0/server-event-ujikom/issues"
+    "url": "https://github.com/ADARIYA0/server-planhub/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ADARIYA0/server-event-ujikom.git"
+    "url": "git+https://github.com/ADARIYA0/server-planhub.git"
   },
   "license": "ISC",
   "author": "ADARIYA0",
@@ -17,8 +17,6 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "seed:attendance": "node src/seeds/seedAttendance.js",
-    "seed:events": "node src/seeds/seedEvents.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

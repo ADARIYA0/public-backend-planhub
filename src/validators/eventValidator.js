@@ -21,7 +21,6 @@ const eventValidationRules = [
 const validate = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        // tidak log payload besar, hanya metadata error
         logger.warn('Validation failed creating event', { errors: errors.array() });
         return res.status(422).json({ errors: errors.array() });
     }

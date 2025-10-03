@@ -1,9 +1,8 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const logger = require('../utils/logger');
-const { addToBlacklist } = require('../utils/tokenBlacklist');
 const { AppDataSource } = require('../config/database');
+const { addToBlacklist, generateTokens } = require('../utils/tokenUtils');
 const { sendOtpEmail } = require('../services/emailService');
+const bcrypt = require('bcryptjs');
+const logger = require('../utils/logger');
 const ms = require('ms');
 
 const userRepository = AppDataSource.getRepository('User');
@@ -18,26 +17,6 @@ function getExpiryDate(minutes) {
     return new Date(Date.now() + minutes * 60 * 1000);
 }
 
-function generateTokens(userId, role = 'user') {
-    const payload = { id: userId, role };
-
-    const accessToken = jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_ACCESS_EXPIRES }
-    );
-
-    const refreshToken = jwt.sign(
-        payload,
-        process.env.JWT_REFRESH_SECRET,
-        { expiresIn: process.env.JWT_REFRESH_EXPIRES }
-    );
-
-    logger.debug(`Generated tokens for subjectId=${userId}, role=${role}`);
-    return { accessToken, refreshToken };
-}
-
-// REGISTER
 exports.register = async (req, res) => {
     try {
         const { email, no_handphone, password, alamat, pendidikan_terakhir } = req.body;
@@ -93,7 +72,6 @@ exports.register = async (req, res) => {
     }
 };
 
-// LOGIN    
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -123,7 +101,6 @@ exports.login = async (req, res) => {
 
         const { accessToken, refreshToken } = generateTokens(user.id, 'user');
 
-        // simpan refresh token di user_tokens
         const userToken = userTokenRepository.create({
             user,
             refresh_token: refreshToken,
@@ -155,7 +132,6 @@ exports.login = async (req, res) => {
     }
 };
 
-// REFRESH TOKEN
 exports.refreshToken = async (req, res) => {
     try {
         const { id, role } = req.user;
@@ -198,7 +174,6 @@ exports.refreshToken = async (req, res) => {
     }
 };
 
-// VERIFY OTP
 exports.verifyOtp = async (req, res) => {
     try {
         const { email, otp } = req.body;
@@ -245,7 +220,6 @@ exports.verifyOtp = async (req, res) => {
     }
 };
 
-// RESEND OTP
 exports.resendOtp = async (req, res) => {
     try {
         const { email } = req.body;
@@ -282,7 +256,6 @@ exports.resendOtp = async (req, res) => {
     }
 };
 
-// LOGOUT
 exports.logout = async (req, res) => {
     try {
         const accessToken = req.headers.authorization?.split(' ')[1];
@@ -299,7 +272,6 @@ exports.logout = async (req, res) => {
             }
         }
 
-        // logger sesuai role
         const actor = role === 'admin' ? 'Admin' : 'User';
         logger.info(`${actor} logout: ${actor.toLowerCase()}Id=${req.user?.id || 'unknown'}`);
 

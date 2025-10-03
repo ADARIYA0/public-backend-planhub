@@ -1,5 +1,5 @@
-const authRoutes = require('./src/routes/authRoute');
-const adminAuthRoutes = require('./src/routes/adminAuthRoute');
+const authRoute = require('./src/routes/authRoute');
+const adminRoute = require('./src/routes/adminRoute');
 const eventRoute = require('./src/routes/eventRoute');
 const cors = require("cors");
 const express = require('express');
@@ -13,8 +13,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
-app.use('/api/auth', authRoutes);
-app.use('/api/auth/admin', adminAuthRoutes);
+app.use('/api/auth', authRoute);
+app.use('/api/auth/admin', adminRoute);
 app.use('/api/event', eventRoute)
 
 app.get('/status', (req, res) => {

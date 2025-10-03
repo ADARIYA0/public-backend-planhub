@@ -1,32 +1,11 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const logger = require('../utils/logger');
-const { addToBlacklist } = require('../utils/tokenBlacklist');
 const { AppDataSource } = require('../config/database');
+const { generateTokens } = require('../utils/tokenUtils');
+const bcrypt = require('bcryptjs');
+const logger = require('../utils/logger');
 const ms = require('ms');
 
 const adminRepository = AppDataSource.getRepository('Admin');
 const adminTokenRepository = AppDataSource.getRepository('AdminToken');
-
-// generateTokens: gunakan same logic seperti di authController
-function generateTokens(subjectId, role = 'admin') {
-    const payload = { id: subjectId, role };
-
-    const accessToken = jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_ACCESS_EXPIRES }
-    );
-
-    const refreshToken = jwt.sign(
-        payload,
-        process.env.JWT_REFRESH_SECRET,
-        { expiresIn: process.env.JWT_REFRESH_EXPIRES }
-    );
-
-    logger.debug(`Generated admin tokens for id=${subjectId}`);
-    return { accessToken, refreshToken };
-}
 
 exports.registerAdmin = async (req, res) => {
     try {

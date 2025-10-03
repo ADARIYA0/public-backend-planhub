@@ -42,7 +42,6 @@ async function renameUploadedFileToSlug(fileObj, destDir, baseName) {
     while (true) {
         try {
             await fsPromises.access(destPath, fs.constants.F_OK);
-            // exists -> increment
             counter += 1;
             filename = `${baseName}-${counter}${ext}`;
             destPath = path.join(destDir, filename);
@@ -52,7 +51,6 @@ async function renameUploadedFileToSlug(fileObj, destDir, baseName) {
         }
     }
 
-    // rename (move)
     await fsPromises.rename(fileObj.path, destPath);
 
     logger.debug('File renamed to slug name', { from: fileObj.path, to: destPath });

@@ -10,7 +10,7 @@ const AppDataSource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  synchronize: true, // jangan aktifkan di production (hanya untuk development)
+  synchronize: process.env.DB_SYNCHRONIZE,
   logging: false,
   entities: [
     require('../entities/Auth/User'),

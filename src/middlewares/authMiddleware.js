@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
-const { isBlacklisted } = require('../utils/tokenBlacklist');
+const { isBlacklisted } = require('../utils/tokenUtils');
 
 const verifyToken = (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
