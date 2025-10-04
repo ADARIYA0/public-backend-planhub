@@ -1,14 +1,14 @@
 {
-  "name": "server-planhub",
+  "name": "public-backend-planhub",
   "version": "1.0.0",
   "description": "",
-  "homepage": "https://github.com/ADARIYA0/server-planhub#readme",
+  "homepage": "https://github.com/ADARIYA0/public-backend-planhub#readme",
   "bugs": {
-    "url": "https://github.com/ADARIYA0/server-planhub/issues"
+    "url": "https://github.com/ADARIYA0/public-backend-planhub/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ADARIYA0/server-planhub.git"
+    "url": "git+https://github.com/ADARIYA0/public-backend-planhub.git"
   },
   "license": "ISC",
   "author": "ADARIYA0",
