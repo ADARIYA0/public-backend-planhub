@@ -24,7 +24,7 @@ const verifyToken = (req, res, next) => {
         logger.debug(`Token verified: userId=${decoded.id}, ip=${ip}, url=${req.originalUrl}`);
         next();
     } catch (error) {
-        logger.warn(`Invalid token: ${error.message}, ip=${ip}, url=${req.originalUrl}`);
+        logger.warn(`Invalid token: ${error}, ip=${ip}, url=${req.originalUrl}`);
         return res.status(403).json({ message: 'Token tidak valid atau sudah expired' });
     }
 };

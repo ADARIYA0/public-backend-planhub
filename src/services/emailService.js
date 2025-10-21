@@ -16,7 +16,7 @@ async function verifyTransporter() {
     await transporter.verify();
     logger.info('Email transporter ready');
   } catch (error) {
-    logger.error(`Email transporter verify failed: ${error.message}`);
+    logger.error(`Email transporter verify failed: ${error}`);
     throw error;
   }
 }
@@ -64,7 +64,7 @@ async function sendOtpEmail(to, otp, expiresMinutes = 15) {
     logger.info(`OTP email sent to ${to} (messageId=${info.messageId})`);
     return info;
   } catch (error) {
-    logger.error(`Failed to send OTP email to ${to}: ${error.message}`);
+    logger.error(`Failed to send OTP email to ${to}: ${error}`);
     throw error;
   }
 }

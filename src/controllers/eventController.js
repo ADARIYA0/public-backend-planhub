@@ -91,7 +91,11 @@ exports.getAllEvent = async (req, res) => {
                 waktu_mulai: ev.waktu_mulai,
                 waktu_berakhir: ev.waktu_berakhir,
                 kategori: ev.category
-                    ? { id: ev.category.id, nama_kategori: ev.category.nama_kategori, slug: ev.category.slug }
+                    ? {
+                        id: ev.category.id,
+                        nama_kategori: ev.category.nama_kategori,
+                        slug: ev.category.slug
+                    }
                     : null,
                 attendee_count: count,
                 is_full
@@ -101,7 +105,7 @@ exports.getAllEvent = async (req, res) => {
         logger.info(`Events retrieved: count=${events.length}, total=${total}`);
         return res.json({ meta: { page, limit, total }, data: events });
     } catch (error) {
-        logger.error(`getAllEvent error: ${error.message}`, { stack: error.stack });
+        logger.error(`getAllEvent error: ${error}`, { stack: error.stack });
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -139,7 +143,10 @@ exports.getEventBySlug = async (req, res) => {
             waktu_mulai: ev.waktu_mulai,
             waktu_berakhir: ev.waktu_berakhir,
             kategori: ev.category
-                ? { id: ev.category.id, nama_kategori: ev.category.nama_kategori, slug: ev.category.slug }
+                ? {id: ev.category.id,
+                    nama_kategori: ev.category.nama_kategori,
+                    slug: ev.category.slug
+                }
                 : null,
             attendee_count: attendeeCount,
             is_full: (ev.kapasitas_peserta > 0) && (attendeeCount >= ev.kapasitas_peserta)
@@ -148,7 +155,7 @@ exports.getEventBySlug = async (req, res) => {
         logger.info(`Event retrieved successfully: slug=${slug}`);
         return res.json(response);
     } catch (error) {
-        logger.error(`getEventBySlug error: ${error.message}`, { stack: error.stack });
+        logger.error(`getEventBySlug error: ${error}`, { stack: error.stack });
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -186,7 +193,10 @@ exports.getEventById = async (req, res) => {
             waktu_mulai: ev.waktu_mulai,
             waktu_berakhir: ev.waktu_berakhir,
             kategori: ev.category
-                ? { id: ev.category.id, nama_kategori: ev.category.nama_kategori }
+                ? {
+                    id: ev.category.id,
+                    nama_kategori: ev.category.nama_kategori
+                }
                 : null,
             attendee_count: attendeeCount,
             is_full: (ev.kapasitas_peserta > 0) && (attendeeCount >= ev.kapasitas_peserta)
@@ -195,7 +205,7 @@ exports.getEventById = async (req, res) => {
         logger.info(`Event retrieved successfully: id=${id}`);
         return res.json(response);
     } catch (error) {
-        logger.error(`getEventById error: ${error.message}`, { stack: error.stack });
+        logger.error(`getEventById error: ${error}`, { stack: error.stack });
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -349,7 +359,7 @@ exports.createEvent = async (req, res) => {
             logger.warn('Duplicate entry blocked by DB constraint', {
                 code: error.code,
                 errno: error.errno,
-                message: error.message,
+                message: error,
                 stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
             });
             return res.status(409).json({
@@ -360,7 +370,7 @@ exports.createEvent = async (req, res) => {
         logger.error('createEvent unexpected error', {
             code: error.code,
             errno: error.errno,
-            message: error.message,
+            message: error,
             stack: error.stack
         });
 

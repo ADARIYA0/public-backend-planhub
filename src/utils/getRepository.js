@@ -15,7 +15,7 @@ function getRepository(entityClass) {
     try {
         return AppDataSource.getRepository(entityClass);
     } catch (error) {
-        logger.error(`Gagal mendapatkan repository untuk ${entityClass.name}: ${error.message}`);
+        logger.error(`Gagal mendapatkan repository untuk ${entityClass.name}: ${error}`);
         throw error;
     }
 }

@@ -1,9 +1,9 @@
+const { validate } = require('../middlewares/validate');
 const express = require('express');
 const authController = require('../controllers/authController');
 const authValidator = require('../validators/authValidator');
-const { validate } = require('../middlewares/validate');
-const verifyToken = require('../middlewares/authMiddleware');
 const verifyRefreshToken = require('../middlewares/refreshMiddleware');
+const verifyToken = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 

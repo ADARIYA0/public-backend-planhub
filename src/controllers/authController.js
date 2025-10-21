@@ -1,12 +1,12 @@
-const { AppDataSource } = require('../config/database');
 const { addToBlacklist, generateTokens } = require('../utils/tokenUtils');
 const { getRepository } = require('../utils/getRepository');
 const { sendOtpEmail } = require('../services/emailService');
-const { User } = require('../entities/Auth/User');
-const { UserToken } = require('../entities/Auth/UserToken');
+const AdminToken = require('../entities/Auth/AdminToken');
 const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
 const ms = require('ms');
+const User = require('../entities/Auth/User');
+const UserToken = require('../entities/Auth/UserToken');
 
 function generateOtp() {
     return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit
@@ -68,8 +68,8 @@ exports.register = async (req, res) => {
             user: { id: newUser.id, email: newUser.email, no_handphone: newUser.no_handphone }
         });
     } catch (error) {
-        logger.error(`Registration error for email=${req.body.email}: ${error.message}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
+        logger.error(`Registration error for email=${req.body.email}: ${error}`, { stack: error.stack });
+        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
     }
 };
 
@@ -122,7 +122,7 @@ exports.login = async (req, res) => {
             httpOnly: true,
             secure: process.env.COOKIE_SECURE === 'true',
             sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-            path: "/api/auth/refresh-token",
+            path: "/",
             maxAge: ms(process.env.JWT_REFRESH_EXPIRES)
         });
 
@@ -131,8 +131,8 @@ exports.login = async (req, res) => {
             accessToken
         });
     } catch (error) {
-        logger.error(`Login error for email=${req.body.email}: ${error.message}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
+        logger.error(`Login error for email=${req.body.email}: ${error}`, { stack: error.stack });
+        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
     }
 };
 
@@ -171,13 +171,13 @@ exports.refreshToken = async (req, res) => {
             httpOnly: true,
             secure: process.env.COOKIE_SECURE === 'true',
             sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-            path: "/api/auth/refresh-token",
+            path: "/",
             maxAge: ms(process.env.JWT_REFRESH_EXPIRES)
         });
         res.status(200).json({ accessToken });
     } catch (error) {
-        logger.error(`refreshToken error: ${error.message}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
+        logger.error(`refreshToken error: ${error}`, { stack: error.stack });
+        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
     }
 };
 
@@ -224,8 +224,8 @@ exports.verifyOtp = async (req, res) => {
         logger.info(`Email verified successfully: email=${email}, userId=${user.id}`);
         res.status(200).json({ message: 'Verifikasi berhasil. Akun sudah aktif.' });
     } catch (error) {
-        logger.error(`verifyOtp error: ${error.message}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
+        logger.error(`verifyOtp error: ${error}`, { stack: error.stack });
+        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
     }
 };
 
@@ -262,8 +262,8 @@ exports.resendOtp = async (req, res) => {
 
         res.status(200).json({ message: 'OTP terkirim ulang ke email' });
     } catch (error) {
-        logger.error(`resendOtp error: ${error.message}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
+        logger.error(`resendOtp error: ${error}`, { stack: error.stack });
+        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
     }
 };
 
@@ -289,10 +289,10 @@ exports.logout = async (req, res) => {
         const actor = role === 'admin' ? 'Admin' : 'User';
         logger.info(`${actor} logout: ${actor.toLowerCase()}Id=${req.user?.id || 'unknown'}`);
 
-        res.clearCookie("refreshToken");
+        res.clearCookie("refreshToken", { path: "/" });
         res.status(200).json({ message: 'Logout berhasil' });
     } catch (error) {
-        logger.error(`Logout error: ${error.message}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
+        logger.error(`Logout error: ${error}`, { stack: error.stack });
+        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
     }
 }
