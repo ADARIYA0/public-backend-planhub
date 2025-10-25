@@ -6,20 +6,38 @@ const allowedOrigins = (process.env.CORS_ORIGINS || '')
     .map(origin => origin.trim())
     .filter(Boolean);
 
+const LOG_CACHE_TTL_MS = 60 * 1000; // 1 minute
+const recentOriginLog = new Map();
+const recentNoOriginLogKey = '__no_origin__';
+
+function shouldLogOnce(key) {
+    const now = Date.now();
+    const last = recentOriginLog.get(key);
+    if (!last || (now - last) > LOG_CACHE_TTL_MS) {
+        recentOriginLog.set(key, now);
+        return true;
+    }
+    return false;
+}
+
 const corsOptions = {
     origin: function (origin, callback) {
         if (!origin) {
-            logger.debug('No origin provided — allowing request (likely server-to-server or Postman)');
+            if (process.env.NODE_ENV !== 'production' && shouldLogOnce(recentNoOriginLogKey)) {
+                logger.debug('No origin provided — allowing request (likely server-to-server or Postman)');
+            }
             return callback(null, true);
         }
 
         if (allowedOrigins.includes(origin)) {
-            logger.debug(`Allowed origin: ${origin}`);
-            callback(null, true);
-        } else {
-            logger.warn(`Blocked origin: ${origin} — not in allowed list`);
-            callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+            if (process.env.NODE_ENV !== 'production' && shouldLogOnce(origin)) {
+                logger.debug(`Allowed origin: ${origin}`);
+            }
+            return callback(null, true);
         }
+
+        logger.warn(`Blocked origin: ${origin} — not in allowed list`);
+        return callback(new Error(`Origin ${origin} not allowed by CORS policy`));
     },
     credentials: true,
     optionsSuccessStatus: 200,
