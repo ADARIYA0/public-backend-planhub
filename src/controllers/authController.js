@@ -16,6 +16,30 @@ function getExpiryDate(minutes) {
     return new Date(Date.now() + minutes * 60 * 1000);
 }
 
+const isProduction = process.env.NODE_ENV === 'production';
+const COOKIE_NAME = isProduction ? '__Host-refreshToken' : 'refreshToken';
+
+const ALLOWED_SAMESITE = new Set(['strict', 'lax', 'none']);
+const DEFAULT_SAMESITE = isProduction ? 'strict' : 'lax';
+let cookieSameSite = (process.env.COOKIE_SAMESITE || DEFAULT_SAMESITE).toLowerCase();
+if (!ALLOWED_SAMESITE.has(cookieSameSite)) {
+    logger.warn(`Invalid COOKIE_SAMESITE="${process.env.COOKIE_SAMESITE}", falling back to "${DEFAULT_SAMESITE}"`);
+    cookieSameSite = DEFAULT_SAMESITE;
+}
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction || process.env.COOKIE_SECURE === 'true',
+    sameSite: cookieSameSite,
+    path: '/',
+    maxAge: ms(process.env.JWT_REFRESH_EXPIRES)
+};
+
+if (cookieOptions.sameSite === 'none' && !cookieOptions.secure) {
+    logger.warn('COOKIE_SAMESITE=none requires secure=true. Overriding sameSite to "lax".');
+    cookieOptions.sameSite = 'lax';
+}
+
 exports.register = async (req, res) => {
     try {
         const userRepository = getRepository(User);
@@ -69,7 +93,7 @@ exports.register = async (req, res) => {
         });
     } catch (error) {
         logger.error(`Registration error for email=${req.body.email}: ${error}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
+        res.status(500).json({ message: 'Terjadi kesalahan internal' });
     }
 };
 
@@ -118,21 +142,14 @@ exports.login = async (req, res) => {
         logger.info(`Login successful: userId=${user.id}, email=${email}`);
         logger.debug(`Generated JWT payload: ${JSON.stringify({ id: user.id })}`);
 
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: process.env.COOKIE_SECURE === 'true',
-            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-            path: "/",
-            maxAge: ms(process.env.JWT_REFRESH_EXPIRES)
-        });
-
+        res.cookie(COOKIE_NAME, refreshToken, cookieOptions);
         res.status(200).json({
             message: 'Login berhasil',
             accessToken
         });
     } catch (error) {
         logger.error(`Login error for email=${req.body.email}: ${error}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
+        res.status(500).json({ message: 'Terjadi kesalahan internal' });
     }
 };
 
@@ -141,8 +158,8 @@ exports.refreshToken = async (req, res) => {
         const userTokenRepository = getRepository(UserToken);
         const adminTokenRepository = getRepository(AdminToken);
 
+        const refreshToken = req.refreshToken || req.cookies?.[COOKIE_NAME] || null;
         const { id, role } = req.user;
-        const refreshToken = req.refreshToken;
 
         const tokenRepo = role === 'admin'
             ? adminTokenRepository
@@ -167,17 +184,11 @@ exports.refreshToken = async (req, res) => {
 
         logger.info(`Refresh successful: subjectId=${id}, role=${role}`);
 
-        res.cookie("refreshToken", newRefreshToken, {
-            httpOnly: true,
-            secure: process.env.COOKIE_SECURE === 'true',
-            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-            path: "/",
-            maxAge: ms(process.env.JWT_REFRESH_EXPIRES)
-        });
+        res.cookie(COOKIE_NAME, newRefreshToken, cookieOptions);
         res.status(200).json({ accessToken });
     } catch (error) {
         logger.error(`refreshToken error: ${error}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
+        res.status(500).json({ message: 'Terjadi kesalahan internal' });
     }
 };
 
@@ -225,7 +236,7 @@ exports.verifyOtp = async (req, res) => {
         res.status(200).json({ message: 'Verifikasi berhasil. Akun sudah aktif.' });
     } catch (error) {
         logger.error(`verifyOtp error: ${error}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
+        res.status(500).json({ message: 'Terjadi kesalahan internal' });
     }
 };
 
@@ -263,7 +274,7 @@ exports.resendOtp = async (req, res) => {
         res.status(200).json({ message: 'OTP terkirim ulang ke email' });
     } catch (error) {
         logger.error(`resendOtp error: ${error}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
+        res.status(500).json({ message: 'Terjadi kesalahan internal' });
     }
 };
 
@@ -275,7 +286,7 @@ exports.logout = async (req, res) => {
         const accessToken = req.headers.authorization?.split(' ')[1];
         if (accessToken) addToBlacklist(accessToken);
 
-        const refreshToken = req.cookies?.refreshToken;
+        const refreshToken = req.cookies?.[COOKIE_NAME];
         const role = req.user?.role || 'user';
 
         if (refreshToken) {
@@ -289,10 +300,15 @@ exports.logout = async (req, res) => {
         const actor = role === 'admin' ? 'Admin' : 'User';
         logger.info(`${actor} logout: ${actor.toLowerCase()}Id=${req.user?.id || 'unknown'}`);
 
-        res.clearCookie("refreshToken", { path: "/" });
+        res.clearCookie(COOKIE_NAME, {
+            path: cookieOptions.path,
+            secure: cookieOptions.secure,
+            sameSite: cookieOptions.sameSite,
+            httpOnly: cookieOptions.httpOnly
+        });
         res.status(200).json({ message: 'Logout berhasil' });
     } catch (error) {
         logger.error(`Logout error: ${error}`, { stack: error.stack });
-        res.status(500).json({ message: 'Terjadi kesalahan', error: error });
+        res.status(500).json({ message: 'Terjadi kesalahan internal' });
     }
 }

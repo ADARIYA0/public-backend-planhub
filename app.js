@@ -1,6 +1,7 @@
 const { corsOptions } = require('./src/config/corsOption');
 const adminRoute = require('./src/routes/adminRoute');
 const authRoute = require('./src/routes/authRoute');
+const cookieParser = require('cookie-parser');
 const cors = require("cors");
 const eventRoute = require('./src/routes/eventRoute');
 const express = require('express');
@@ -8,6 +9,7 @@ const path = require('path');
 
 const app = express();
 
+app.use(cookieParser());
 app.use(cors(corsOptions));
 app.use(express.json());
 
